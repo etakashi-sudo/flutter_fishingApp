@@ -48,17 +48,84 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _addLure() async {
-    final newLure = Lure()
-      ..name = 'ステラ 2500'
-      ..brand = 'シマノ'
-      ..lastUsedAt = DateTime.now();
+    String name = '';
+    String brand = '';
+    LureCategory selectedCategory = LureCategory.minnow;
 
-    await widget.isar.writeTxn(() async {
-      await widget.isar.lures.put(newLure);
-    });
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('ルアーの登録'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'メーカー'),
+                    onChanged: (value) => brand = value,
+                  ),
+                  TextField(
+                    decoration: const InputDecoration(labelText: '製品名'),
+                    onChanged: (value) => name = value,
+                  ),
 
-    _refreshLures();
+                  // spacer
+                  const SizedBox(height: 16),
+
+                  DropdownButton<LureCategory>(
+                    value: selectedCategory,
+                    isExpanded: true,
+                    items: LureCategory.values.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category.displayName),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => selectedCategory = value);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('キャンセル'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (name.isNotEmpty && brand.isNotEmpty) {
+                      final newLure = Lure()
+                        ..name = name
+                        ..brand = brand
+                        ..category = selectedCategory
+                        ..lastUsedAt = DateTime.now();
+
+                      await widget.isar.writeTxn(() async {
+                        await widget.isar.lures.put(newLure);
+                      });
+
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                      _refreshLures();
+                    }
+                  },
+                  child: const Text('保存'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
+
+  // 最後に build メソッドの FloatingActionButton の onPressed を変更
+  // onPressed: _showAddLureDialog,
 
   @override
   Widget build(BuildContext context) {

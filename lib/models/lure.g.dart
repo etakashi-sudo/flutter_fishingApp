@@ -22,13 +22,19 @@ const LureSchema = CollectionSchema(
       name: r'brand',
       type: IsarType.string,
     ),
-    r'lastUsedAt': PropertySchema(
+    r'category': PropertySchema(
       id: 1,
+      name: r'category',
+      type: IsarType.byte,
+      enumMap: _LurecategoryEnumValueMap,
+    ),
+    r'lastUsedAt': PropertySchema(
+      id: 2,
       name: r'lastUsedAt',
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'name',
       type: IsarType.string,
     )
@@ -65,8 +71,9 @@ void _lureSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.brand);
-  writer.writeDateTime(offsets[1], object.lastUsedAt);
-  writer.writeString(offsets[2], object.name);
+  writer.writeByte(offsets[1], object.category.index);
+  writer.writeDateTime(offsets[2], object.lastUsedAt);
+  writer.writeString(offsets[3], object.name);
 }
 
 Lure _lureDeserialize(
@@ -77,9 +84,12 @@ Lure _lureDeserialize(
 ) {
   final object = Lure();
   object.brand = reader.readString(offsets[0]);
+  object.category =
+      _LurecategoryValueEnumMap[reader.readByteOrNull(offsets[1])] ??
+          LureCategory.minnow;
   object.id = id;
-  object.lastUsedAt = reader.readDateTimeOrNull(offsets[1]);
-  object.name = reader.readString(offsets[2]);
+  object.lastUsedAt = reader.readDateTimeOrNull(offsets[2]);
+  object.name = reader.readString(offsets[3]);
   return object;
 }
 
@@ -93,13 +103,31 @@ P _lureDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (_LurecategoryValueEnumMap[reader.readByteOrNull(offset)] ??
+          LureCategory.minnow) as P;
     case 2:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 3:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _LurecategoryEnumValueMap = {
+  'minnow': 0,
+  'crankbait': 1,
+  'vibration': 2,
+  'metalJig': 3,
+  'other': 4,
+};
+const _LurecategoryValueEnumMap = {
+  0: LureCategory.minnow,
+  1: LureCategory.crankbait,
+  2: LureCategory.vibration,
+  3: LureCategory.metalJig,
+  4: LureCategory.other,
+};
 
 Id _lureGetId(Lure object) {
   return object.id;
@@ -313,6 +341,59 @@ extension LureQueryFilter on QueryBuilder<Lure, Lure, QFilterCondition> {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'brand',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Lure, Lure, QAfterFilterCondition> categoryEqualTo(
+      LureCategory value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'category',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Lure, Lure, QAfterFilterCondition> categoryGreaterThan(
+    LureCategory value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'category',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Lure, Lure, QAfterFilterCondition> categoryLessThan(
+    LureCategory value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'category',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Lure, Lure, QAfterFilterCondition> categoryBetween(
+    LureCategory lower,
+    LureCategory upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'category',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -584,6 +665,18 @@ extension LureQuerySortBy on QueryBuilder<Lure, Lure, QSortBy> {
     });
   }
 
+  QueryBuilder<Lure, Lure, QAfterSortBy> sortByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Lure, Lure, QAfterSortBy> sortByCategoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.desc);
+    });
+  }
+
   QueryBuilder<Lure, Lure, QAfterSortBy> sortByLastUsedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUsedAt', Sort.asc);
@@ -619,6 +712,18 @@ extension LureQuerySortThenBy on QueryBuilder<Lure, Lure, QSortThenBy> {
   QueryBuilder<Lure, Lure, QAfterSortBy> thenByBrandDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'brand', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Lure, Lure, QAfterSortBy> thenByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Lure, Lure, QAfterSortBy> thenByCategoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.desc);
     });
   }
 
@@ -667,6 +772,12 @@ extension LureQueryWhereDistinct on QueryBuilder<Lure, Lure, QDistinct> {
     });
   }
 
+  QueryBuilder<Lure, Lure, QDistinct> distinctByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'category');
+    });
+  }
+
   QueryBuilder<Lure, Lure, QDistinct> distinctByLastUsedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastUsedAt');
@@ -691,6 +802,12 @@ extension LureQueryProperty on QueryBuilder<Lure, Lure, QQueryProperty> {
   QueryBuilder<Lure, String, QQueryOperations> brandProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'brand');
+    });
+  }
+
+  QueryBuilder<Lure, LureCategory, QQueryOperations> categoryProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'category');
     });
   }
 
