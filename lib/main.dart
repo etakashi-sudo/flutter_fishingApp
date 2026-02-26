@@ -124,9 +124,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  // 最後に build メソッドの FloatingActionButton の onPressed を変更
-  // onPressed: _showAddLureDialog,
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
